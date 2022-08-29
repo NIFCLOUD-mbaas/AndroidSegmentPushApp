@@ -1,5 +1,8 @@
 package mbaas.com.nifcloud.androidsegmentpushapp;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -8,7 +11,10 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.nifcloud.mbaas.core.DoneCallback;
 import com.nifcloud.mbaas.core.FindCallback;
@@ -49,6 +55,10 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        if (Build.VERSION.SDK_INT >= 33) {
+            askNotificationPermission();
+        }
+
         //表示する端末情報のデータを反映
         _objectId = (TextView) findViewById(R.id.txtObject);
         _appversion = (TextView) findViewById(R.id.txtAppversion);
@@ -76,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
                             _objectId.setText(ncmbInstallation.getObjectId());
                             _appversion.setText(ncmbInstallation.getAppVersion());
                             try {
-                                if (ncmbInstallation.getChannels() != null) {
+                                if (ncmbInstallation.getChannels() != null && ncmbInstallation.getChannels().length() != 0) {
                                     String selectChannel = ncmbInstallation.getChannels().get(0).toString();
                                     String[] channelArray = new String[]{"A", "B", "C", "D"};
                                     Integer selectId = Arrays.asList(channelArray).indexOf(selectChannel);
@@ -137,5 +147,27 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    // FCM SDK (and your app) can post notifications.
+                } else {
+                    // TODO: Inform user that that your app will not show notifications.
+                }
+            });
 
+    private void askNotificationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED) {
+            // FCM SDK (and your app) can post notifications.
+        } else if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+            // TODO: display an educational UI explaining to the user the features that will be enabled
+            //       by them granting the POST_NOTIFICATION permission. This UI should provide the user
+            //       "OK" and "No thanks" buttons. If the user selects "OK," directly request the permission.
+            //       If the user selects "No thanks," allow the user to continue without notifications.
+        } else {
+            // Directly ask for the permission
+            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+        }
+    }
 }
